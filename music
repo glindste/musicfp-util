@@ -82,12 +82,12 @@ fi
 
 # If the argument is not listen only, try to download rss feed and update.
 if [ ! $ARG == $LISTEN ]; then
-    # Check if xmlstarlet package is installed, exit if not.
-    #VAR=$(dpkg --get-selections | awk '/\Winstall/ {print $1}' | grep xmlstarlet)
-    #if [ ! $VAR = $XMLS ]; then
-    #    echo "xmlstarlet is not installed! Please install using 'sudo apt-get install xmlstarlet' (Ubuntu) or equivalent."
-    #    exit 3
-    #fi
+    VAR=$(command -v xmlstarlet 2>/dev/null)
+    VAR=$(basename $VAR 2>/dev/null)
+    if [ ! "${VAR}" == "${XMLS}" ]; then
+      echo "xmlstarlet is not installed! Please install using your package manager."
+      exit 3
+    fi
 
     # Fetch RSS feed and put it in a file named rss.
     echo "Fetching RSS feed..."
