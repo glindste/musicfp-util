@@ -1,0 +1,113 @@
+#!/bin/bash
+
+#
+# A simple bash-script which starts a random vlc playlist with the mp3 files in the specified directory.
+# Additionally, it downloads the RSS feed for http://musicforprogramming.net and checks if the mixes are present in the folder.
+# If they are not present, the script will download the missing files one at a time.
+#
+# Author: Gustaf Lindstedt
+#
+
+# Declare variables.
+DIR="/home/${USER}/Music/musicForProgramming"
+XMLS="xmlstarlet"
+UPDATE="-u"
+LISTEN="-l"
+HELP="-h"
+ARG="-"
+HELPTEXT="This is a simple bash script which facilitates downloading and listening to the
+musicForProgramming(); mixes available from http://musicforprogramming.net.
+It does this by downloading the mp3 files to the directory
+~/Music/musicForProgramming, asking the user to create the directory if it does
+not exist.
+Usage:
+	${0} [option]
+Options:
+	-h display this help text
+	-u only check for updates
+	-l only launch the vlc playlist\n"
+
+# Store argument if given.
+if [ ! $# == 0 ]; then
+    ARG=$1
+    if [ ! $ARG == $UPDATE ]; then
+        if [ ! $ARG == $LISTEN ]; then
+            if [ ! $ARG == $HELP ]; then
+                echo "Unknown option ${ARG}. For help type '${0} -h'"
+                exit 1
+            fi
+        fi
+    fi
+fi
+
+# Print help text if help argument was given
+if [ $ARG == $HELP ]; then
+    printf "${HELPTEXT}"
+    exit 0
+fi
+
+# Check if directory exists.
+if [ ! -d $DIR ]; then
+    while true
+    do
+        echo "The directory '${DIR}' does not exist, do you want to create it? (y/n)"
+        read ANS
+        if [ $ANS == "y" ]; then break
+        else
+            if [ $ANS == "n" ]; then
+                echo "Fine, be that way. Exiting..."
+                exit 2
+            else
+                echo "Unknown answer, please input 'y' or 'n'."
+            fi
+        fi
+    done
+    mkdir $DIR
+fi
+
+# If the argument is not update only, try to launch vlc.
+if [ ! $ARG == $UPDATE ]; then
+    # Check if mp3 files are available, run VLC if available.
+    # 2>/dev/null redirects STDERR messages to the null device
+    COUNT=$(ls -1 ${DIR}/*.mp3 2>/dev/null | wc -l)
+    if [ $COUNT == 0 ]; then
+        echo "No existing .mp3 files in directory. Not launching VLC."
+    else
+        echo "Launching VLC..."
+        xterm -e vlc -I ncurses -ZL ${DIR}/*.mp3 #replace xterm to your preferred terminal emulator
+        #Replace with this command if you want the standard gui instead
+        # vlc -ZL ${DIR}/*.mp3 1>/dev/null 2>/dev/null &
+    fi
+fi
+
+# If the argument is not listen only, try to download rss feed and update.
+if [ ! $ARG == $LISTEN ]; then
+    # Check if xmlstarlet package is installed, exit if not.
+    #VAR=$(dpkg --get-selections | awk '/\Winstall/ {print $1}' | grep xmlstarlet)
+    #if [ ! $VAR = $XMLS ]; then
+    #    echo "xmlstarlet is not installed! Please install using 'sudo apt-get install xmlstarlet' (Ubuntu) or equivalent."
+    #    exit 3
+    #fi
+
+    # Fetch RSS feed and put it in a file named rss.
+    echo "Fetching RSS feed..."
+    wget --tries=1 --timeout=5 --quiet --user-agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:14.0) Gecko/20100101 Firefox/14.0.1" -O- "http://musicforprogramming.net/rss.php">${DIR}/rss
+    if [ -s ${DIR}/rss ]; then
+        echo "Success!"
+    else
+        echo "Connection failed. Exiting..."
+        exit 4
+    fi
+
+    # Parse the rss file for the filenames
+    for l in $(xmlstarlet sel -t -m "/rss/channel/item" -v "comments" -n ${DIR}/rss); do
+        n=$(basename $l)
+        if [ ! -e ${DIR}/${n} ];then
+            echo "${n} is missing. Downloading..."
+            wget --tries=1 --timeout=5 --progress=bar -O ${DIR}/${n} ${l}
+        else
+            echo "${n} is present."
+        fi
+    done
+fi
+exit 0
