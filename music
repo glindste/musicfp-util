@@ -74,8 +74,12 @@ if [ ! $ARG == $UPDATE ]; then
         echo "No existing .mp3 files in directory. Not launching VLC."
     else
         echo "Launching VLC..."
-        xterm -e vlc -I ncurses -ZL ${DIR}/*.mp3 & #replace xterm to your preferred terminal emulator
-        #Replace with this command if you want the standard gui instead
+
+        # Replace "xterm" to your preferred terminal emulator
+        # Gnome terminal: gnome-terminal -x vlc -I ncurses -ZL ${DIR}/*.mp3 &
+        # Urxvt: urxvt -e  vlc -I ncurses -ZL ${DIR}/*.mp3 &
+        xterm -e vlc -I ncurses -ZL ${DIR}/*.mp3 &
+        # Replace with this command if you want the standard gui instead
         # vlc -ZL ${DIR}/*.mp3 1>/dev/null 2>/dev/null &
     fi
 fi
