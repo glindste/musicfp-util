@@ -30,13 +30,9 @@ Options:
 # Store argument if given.
 if [ ! $# == 0 ]; then
     ARG=$1
-    if [ ! $ARG == $UPDATE ]; then
-        if [ ! $ARG == $LISTEN ]; then
-            if [ ! $ARG == $HELP ]; then
-                echo "Unknown option ${ARG}. For help type '${0} -h'"
-                exit 1
-            fi
-        fi
+    if [ ! $ARG == $UPDATE -a ! $ARG == $LISTEN -a ! $ARG == $HELP ]; then
+        echo "Unknown option ${ARG}. For help type '${0} -h'"
+        exit 1
     fi
 fi
 
